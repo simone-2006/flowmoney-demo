@@ -1,0 +1,23 @@
+{
+  "services": {
+    "backend": {
+      "root": "api",
+      "framework": "express",
+      "installCommand": "npm install --prefix .."
+    },
+    "frontend": {
+      "root": ".",
+      "framework": "vite"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "frontend" }
+    }
+  ]
+}
