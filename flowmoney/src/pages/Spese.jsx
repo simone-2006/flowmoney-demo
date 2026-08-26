@@ -3,7 +3,8 @@ import { Chart } from "react-charts";
 import { BanknoteArrowDown } from "lucide-react";
 import Page from "../components/layout/Page";
 import PeriodTabs from "../components/PeriodTabs";
-import { api, formatDateIt, formatEuro } from "../lib/api";
+import { formatDateIt, formatEuro } from "../lib/format";
+import { getBreakdown, getHistory } from "../lib/store";
 
 const DAY_LABELS = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
 const MONTH_LABELS = [
@@ -134,15 +135,10 @@ export default function Spese() {
   const [history, setHistory] = useState(emptySection);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadSection(path, setSection) {
+    function loadSection(loader, setSection) {
       setSection({ ...emptySection });
       try {
-        const data = await api(`${path}?period=${period}`);
-        if (cancelled) {
-          return;
-        }
+        const data = loader(period);
         setSection({
           loading: false,
           error: "",
@@ -150,17 +146,12 @@ export default function Spese() {
           points: data.points || [],
         });
       } catch (err) {
-        if (!cancelled) {
-          setSection({ ...emptySection, loading: false, error: err.message });
-        }
+        setSection({ ...emptySection, loading: false, error: err.message });
       }
     }
 
-    loadSection("/expenses/breakdown", setBreakdown);
-    loadSection("/expenses/history", setHistory);
-    return () => {
-      cancelled = true;
-    };
+    loadSection(getBreakdown, setBreakdown);
+    loadSection(getHistory, setHistory);
   }, [period]);
 
   return (

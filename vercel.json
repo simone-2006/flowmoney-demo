@@ -1,27 +1,10 @@
 {
-  "services": {
-    "backend": {
-      "root": "flowmoney/api",
-      "framework": "express",
-      "installCommand": "npm install --prefix .."
-    },
-    "frontend": {
-      "root": "flowmoney",
-      "framework": "vite"
-    }
-  },
+  "buildCommand": "cd flowmoney && npm install && npm run build",
+  "outputDirectory": "flowmoney/dist",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
-    },
-    {
       "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
+      "destination": "/index.html"
     }
   ]
 }

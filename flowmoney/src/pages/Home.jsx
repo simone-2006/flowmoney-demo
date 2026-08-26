@@ -3,7 +3,8 @@ import Page from "../components/layout/Page";
 import PeriodTabs from "../components/PeriodTabs";
 import { Home as HomeIcon, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { api, formatDateIt, formatEuro } from "../lib/api";
+import { formatDateIt, formatEuro } from "../lib/format";
+import { deleteExpenses, getHome } from "../lib/store";
 
 const TITLES = {
   week: "Spese della settimana",
@@ -35,35 +36,18 @@ export default function Home() {
   }
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError("");
-      try {
-        const data = await api(`/expenses/home?period=${period}`);
-        if (cancelled) {
-          return;
-        }
-        applyHomeData(data);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err.message);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
+    setLoading(true);
+    setError("");
+    try {
+      applyHomeData(getHome(period));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
   }, [period]);
 
-  async function handleDeleteSelected() {
+  function handleDeleteSelected() {
     if (selectedIds.length === 0 || deleting) {
       return;
     }
@@ -71,12 +55,8 @@ export default function Home() {
     setDeleting(true);
     setError("");
     try {
-      await api("/expenses", {
-        method: "DELETE",
-        body: JSON.stringify({ ids: selectedIds }),
-      });
-      const data = await api(`/expenses/home?period=${period}`);
-      applyHomeData(data);
+      deleteExpenses(selectedIds);
+      applyHomeData(getHome(period));
       setSelectedIds([]);
       setIsInSelection(false);
     } catch (err) {

@@ -1,51 +1,65 @@
 # Flowmoney
 
-Tracker personale delle spese (settimana / mese / anno) con login WebAuthn (passkey).
+Demo portfolio di un tracker personale delle spese (settimana / mese / anno).
 
-## Stack
+Nato come **progetto personale** per gestire le proprie uscite; questa versione è adattata per il portfolio: **solo frontend**, senza backend né database. Spese e impostazioni restano nel browser via `localStorage`.
 
-- Frontend: React + Vite + Tailwind
-- Backend: Express (locale e su Vercel)
-- DB: Supabase Postgres (solo `service_role` dal backend)
+## Versione originale (autenticazione)
 
-## Setup locale
+Nell’app personale l’accesso era protetto con **WebAuthn (passkey)**:
 
-1. Copia `.env.example` in `.env` e compila i secret.
-2. Applica le migration in `supabase/migrations/` sul progetto Supabase (già applicate sul DB collegato).
-3. In due terminali:
+1. **Registrazione dispositivo** — con un setup secret lato server si registrava una passkey sul browser/dispositivo (API SimpleWebAuthn).
+2. **Login** — challenge firmato dal backend → asserzione WebAuthn sul dispositivo → verifica server-side → cookie di sessione HMAC.
+3. **API** — Express esponeva `/api/auth`, `/api/expenses`, `/api/settings`; il frontend non parlava mai direttamente col database.
+4. **Persistenza** — Postgres su Supabase, raggiunto solo dal backend con `service_role` (RLS deny-by-default sulla Data API).
+5. **Dispositivi** — in Impostazioni si potevano elencare e revocare le passkey (senza rimuovere l’ultimo dispositivo).
 
-```bash
-npm run server
-npm run dev
-```
+In production: bypass di sviluppo disattivato, secret di sessione distinti, Relying Party WebAuthn allineato al dominio reale.
 
-Frontend: `http://localhost:5173` · API: `http://localhost:3000`
+Questa demo **non** include login, backend né Supabase: serve a mostrare UX e logica del tracker senza infrastruttura.
 
-## Variabili d'ambiente
+## Stack (demo)
 
-| Variabile | Ruolo |
-|-----------|--------|
-| `SETUP_SECRET` | Serve per registrare nuovi dispositivi |
-| `SESSION_SECRET` | Firma cookie di sessione e challenge |
-| `FRONTEND_ORIGIN` | Origin CORS / cookie |
-| `WEBAUTHN_RP_*` | Relying Party WebAuthn |
-| `SUPABASE_URL` | URL progetto |
-| `SUPABASE_SERVICE_ROLE_KEY` | Chiave service role (**mai** nel frontend) |
-| `DEV_BYPASS_AUTH` / `VITE_DEV_BYPASS_AUTH` | Solo locale: salta WebAuthn |
-
-In production: `NODE_ENV=production`, bypass **disattivato**, `SESSION_SECRET` distinto da `SETUP_SECRET`, RP/origin allineati al dominio reale.
-
-## Sicurezza (modello)
-
-- Il browser non parla con Supabase: solo cookie di sessione verso l’API.
-- Tabelle con RLS attivo e **nessuna policy** + `REVOKE` su `anon`/`authenticated`: deny-by-default sulla Data API.
-- Challenge WebAuthn e sessione firmati con HMAC.
-- Rate limit su login/registrazione.
-- Non puoi rimuovere l’ultimo dispositivo registrato.
+- React 19 + Vite
+- Tailwind CSS 4
+- Motion (animazioni menu)
+- React Charts (grafici)
+- Persistenza: `localStorage`
 
 ## Funzionalità
 
-- Aggiungi / modifica / elimina spese
-- Totali e grafici per periodo
-- Alert settimanale
-- Gestione dispositivi (passkey) in Impostazioni
+- Totali e riepilogo spese per periodo (settimana / mese / anno)
+- Aggiungi, modifica ed elimina spese
+- Grafici di dettaglio e storico
+- Alert settimanale configurabile
+- Dati di esempio al primo avvio e ripristino da Impostazioni
+
+## Setup
+
+Dalla cartella `flowmoney/`:
+
+```bash
+npm install
+npm run dev
+```
+
+Apri `http://localhost:5173`.
+
+Build di produzione:
+
+```bash
+npm run build
+npm run preview
+```
+
+## Deploy
+
+App statica: build → cartella `dist`. Su Vercel i rewrite SPA sono già in `vercel.json` (root del repo e cartella app).
+
+Non servono variabili d’ambiente.
+
+## Note demo
+
+- Nessun login: chiunque può usare l’app nel proprio browser
+- I dati non vengono sincronizzati tra dispositivi
+- In Impostazioni → **Ripristina dati demo** si tornano ai dati di esempio

@@ -4,7 +4,7 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { ArrowLeft, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { api } from "../lib/api";
+import { getExpense, updateExpense } from "../lib/store";
 
 export default function ModificaSpesa() {
     const { id } = useParams();
@@ -17,49 +17,30 @@ export default function ModificaSpesa() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        let cancelled = false;
-
-        async function load() {
-            setLoading(true);
-            setError("");
-            try {
-                const result = await api(`/expenses/${id}`);
-                if (cancelled) {
-                    return;
-                }
-                const expense = result.expense;
-                setData(expense.date);
-                setDescrizione(expense.description || "");
-                setImporto(String(expense.amount));
-            } catch (err) {
-                if (!cancelled) {
-                    setError(err.message);
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
+        setLoading(true);
+        setError("");
+        try {
+            const result = getExpense(id);
+            const expense = result.expense;
+            setData(expense.date);
+            setDescrizione(expense.description || "");
+            setImporto(String(expense.amount));
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
-
-        load();
-        return () => {
-            cancelled = true;
-        };
     }, [id]);
 
-    async function handleSubmit(event) {
+    function handleSubmit(event) {
         event.preventDefault();
         setError("");
         setSaving(true);
         try {
-            await api(`/expenses/${id}`, {
-                method: "PUT",
-                body: JSON.stringify({
-                    date: data,
-                    description: descrizione,
-                    amount: parseFloat(importo),
-                }),
+            updateExpense(id, {
+                date: data,
+                description: descrizione,
+                amount: parseFloat(importo),
             });
             navigate("/");
         } catch (err) {

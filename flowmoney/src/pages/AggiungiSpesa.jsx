@@ -4,7 +4,8 @@ import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
 import { ArrowLeft, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { api, formatEuro } from "../lib/api";
+import { formatEuro } from "../lib/format";
+import { createExpense, getMostUsedAmounts } from "../lib/store";
 
 export default function AggiungiSpesa() {
     const today = new Date().toISOString().split("T")[0];
@@ -17,39 +18,22 @@ export default function AggiungiSpesa() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        let cancelled = false;
-
-        async function loadSuggestions() {
-            try {
-                const data = await api("/expenses/most-used-amounts");
-                if (!cancelled) {
-                    setSuggestions(data.amounts || []);
-                }
-            } catch {
-                if (!cancelled) {
-                    setSuggestions([]);
-                }
-            }
+        try {
+            setSuggestions(getMostUsedAmounts().amounts || []);
+        } catch {
+            setSuggestions([]);
         }
-
-        loadSuggestions();
-        return () => {
-            cancelled = true;
-        };
     }, []);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         setError("");
         setSaving(true);
         try {
-            await api("/expenses", {
-                method: "POST",
-                body: JSON.stringify({
-                    date: data,
-                    description: descrizione,
-                    amount: parseFloat(importo)
-                })
+            createExpense({
+                date: data,
+                description: descrizione,
+                amount: parseFloat(importo)
             });
             navigate("/");
         } catch (err) {

@@ -2,64 +2,39 @@ import { useEffect, useState } from "react";
 import Page from "../components/layout/Page";
 import Input from "../components/ui/Input";
 import Button from "../components/ui/Button";
-import { Settings as SettingsIcon, Trash2 } from "lucide-react";
-import { api, formatDateIt, formatEuro } from "../lib/api";
+import { Settings as SettingsIcon, RotateCcw } from "lucide-react";
+import { formatEuro } from "../lib/format";
+import { getWeeklyAlert, resetDemo, setWeeklyAlert } from "../lib/store";
 
 export default function Settings() {
     const [value, setValue] = useState("");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [resetting, setResetting] = useState(false);
     const [error, setError] = useState("");
     const [saved, setSaved] = useState(false);
-    const [devices, setDevices] = useState([]);
-    const [devicesError, setDevicesError] = useState("");
-    const [revokingId, setRevokingId] = useState("");
+    const [resetDone, setResetDone] = useState(false);
 
     useEffect(() => {
-        let cancelled = false;
-
-        async function load() {
-            setLoading(true);
-            setError("");
-            setDevicesError("");
-            try {
-                const [alertData, meData] = await Promise.all([
-                    api("/settings/weekly-alert"),
-                    api("/auth/me"),
-                ]);
-                if (!cancelled) {
-                    setValue(String(alertData.alertExpense ?? 100));
-                    setDevices(meData.devices || []);
-                }
-            } catch (err) {
-                if (!cancelled) {
-                    setError(err.message);
-                }
-            } finally {
-                if (!cancelled) {
-                    setLoading(false);
-                }
-            }
+        setLoading(true);
+        setError("");
+        try {
+            setValue(String(getWeeklyAlert()));
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
-
-        load();
-        return () => {
-            cancelled = true;
-        };
     }, []);
 
-    async function handleSubmit(event) {
+    function handleSubmit(event) {
         event.preventDefault();
         setError("");
         setSaved(false);
+        setResetDone(false);
         setSaving(true);
         try {
-            const data = await api("/settings/weekly-alert", {
-                method: "PUT",
-                body: JSON.stringify({
-                    alertExpense: Number(value),
-                }),
-            });
+            const data = setWeeklyAlert(Number(value));
             setValue(String(data.alertExpense));
             setSaved(true);
         } catch (err) {
@@ -69,25 +44,26 @@ export default function Settings() {
         }
     }
 
-    async function handleRevoke(deviceId) {
-        if (revokingId || devices.length <= 1) {
-            return;
-        }
-        if (!window.confirm("Rimuovere questo dispositivo? Non potrà più accedere.")) {
+    function handleReset() {
+        if (
+            !window.confirm(
+                "Ripristinare i dati demo? Spese e impostazioni attuali verranno sostituiti."
+            )
+        ) {
             return;
         }
 
-        setRevokingId(deviceId);
-        setDevicesError("");
+        setResetting(true);
+        setError("");
+        setSaved(false);
         try {
-            const data = await api(`/auth/devices/${encodeURIComponent(deviceId)}`, {
-                method: "DELETE",
-            });
-            setDevices(data.devices || []);
+            const state = resetDemo();
+            setValue(String(state.settings.weeklyAlert));
+            setResetDone(true);
         } catch (err) {
-            setDevicesError(err.message);
+            setError(err.message);
         } finally {
-            setRevokingId("");
+            setResetting(false);
         }
     }
 
@@ -116,6 +92,7 @@ export default function Settings() {
                                 onChange={(e) => {
                                     setValue(e.target.value);
                                     setSaved(false);
+                                    setResetDone(false);
                                 }}
                                 disabled={loading || saving}
                                 required
@@ -142,56 +119,28 @@ export default function Settings() {
 
                 <div className="bg-white p-4 shadow-2xl rounded-2xl corner-squircle">
                     <div>
-                        <h2 className="text-lg font-semibold">Dispositivi</h2>
+                        <h2 className="text-lg font-semibold">Dati demo</h2>
                         <p className="mt-1 text-xs text-gray-500">
-                            Passkey registrate per l&apos;accesso. Non puoi rimuovere
-                            l&apos;ultimo dispositivo.
+                            Tutto è salvato in localStorage su questo browser. Puoi
+                            ripristinare le spese di esempio in qualsiasi momento.
                         </p>
                     </div>
 
-                    {devicesError && (
-                        <p className="mt-2 text-xs text-red-600">{devicesError}</p>
+                    {resetDone && (
+                        <p className="mt-2 text-xs text-green-600">
+                            Dati demo ripristinati.
+                        </p>
                     )}
 
-                    {loading ? (
-                        <p className="mt-3 text-xs text-gray-500">Caricamento…</p>
-                    ) : devices.length === 0 ? (
-                        <p className="mt-3 text-xs text-gray-500">
-                            Nessun dispositivo registrato.
-                        </p>
-                    ) : (
-                        <ul className="mt-3 flex flex-col gap-2">
-                            {devices.map((device) => (
-                                <li
-                                    key={device.id}
-                                    className="flex items-center justify-between gap-2 border border-gray-100 px-3 py-2 rounded-2xl corner-squircle"
-                                >
-                                    <div className="min-w-0">
-                                        <p className="truncate text-sm font-medium">
-                                            {device.name || "Dispositivo"}
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            {device.createdAt
-                                                ? `Dal ${formatDateIt(device.createdAt)}`
-                                                : "Data sconosciuta"}
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className="flex shrink-0 items-center gap-1 text-xs text-red-600 disabled:opacity-40"
-                                        disabled={
-                                            devices.length <= 1 || revokingId === device.id
-                                        }
-                                        onClick={() => handleRevoke(device.id)}
-                                        aria-label={`Rimuovi ${device.name || "dispositivo"}`}
-                                    >
-                                        <Trash2 size={14} />
-                                        {revokingId === device.id ? "…" : "Rimuovi"}
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                    <Button
+                        type="button"
+                        className="mt-4 flex items-center gap-2"
+                        disabled={resetting}
+                        onClick={handleReset}
+                    >
+                        <RotateCcw size={16} />
+                        {resetting ? "Ripristino…" : "Ripristina dati demo"}
+                    </Button>
                 </div>
             </div>
         </Page>

@@ -5,21 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "server": "node --watch backend/server.js",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@simplewebauthn/browser": "^13.3.0",
-    "@simplewebauthn/server": "^13.3.2",
-    "@supabase/supabase-js": "^2.112.3",
     "@tailwindcss/vite": "^4.3.3",
     "@toolwind/corner-shape": "^0.0.8-3",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
-    "dotenv": "^17.2.1",
-    "express": "^5.2.1",
     "lucide-react": "^1.33.0",
     "motion": "^13.1.1",
     "react": "^19.2.8",

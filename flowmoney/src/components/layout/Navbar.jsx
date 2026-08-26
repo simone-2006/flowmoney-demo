@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { Menu, X, House, BanknoteArrowDown, LogOut, Settings } from "lucide-react";
+import { Menu, X, House, BanknoteArrowDown, Settings } from "lucide-react";
 
 const ease = [0.26, 0.02, 0.23, 0.94];
 
@@ -23,7 +23,7 @@ const menuItems = [
   }
 ];
 
-export default function Navbar({ onLogout }) {
+export default function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -44,8 +44,6 @@ export default function Navbar({ onLogout }) {
             <Menu size={25} />
           </motion.button>
       </AnimatePresence>
-
-      {/* <h1 className="font-bold text-3xl">Flowmoney</h1> */}
 
       <AnimatePresence>
         {open && (
@@ -110,17 +108,6 @@ export default function Navbar({ onLogout }) {
                   })}
                 </ul>
               </nav>
-
-              <div className="mt-auto w-full flex">
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="flex items-center gap-2 px-3 py-2 transition-colors text-red-500 hover:bg-red-50 hover:text-red-600"
-                >
-                  <LogOut />
-                  Logout
-                </button>
-              </div>
             </motion.aside>
           </>
         )}
